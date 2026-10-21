@@ -1,0 +1,1 @@
+{"checks": [{"id": "E2", "passed": true, "expected": "First page IDs 1..20; second page IDs 21..35; only paid rows", "observed": "First page 20; second page 15"}], "note": "No file download or actual web service exercised."}

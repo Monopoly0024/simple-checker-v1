@@ -1,0 +1,379 @@
+{
+  "schema_version": "1.0",
+  "title": "简单的检查者1.0 · 订单导出示例",
+  "reviewed_at": "2026-10-21T12:24:18+08:00",
+  "project_root": "./order-export",
+  "mode": "review",
+  "journey_note": "已从 export_orders 入口执行35条匹配数据；导出遗漏15条。字段转换单独通过。实际下载和异常反馈尚未验证。此报告为内置示例。",
+  "snapshot": {
+    "base_revision": "standalone-example",
+    "notes": "示例源代码未修改，缺陷故意保留以验证检查者。",
+    "files": [
+      {
+        "path": "orders.py",
+        "sha256": "29553a54ee721928c903ebb5de6f5ba00ef0cbcb9d66df5801d72b9cd924aad1"
+      },
+      {
+        "path": "verify_export.py",
+        "sha256": "266acbff097e423ee11bbd0e1d2617eeac1cae47b9e97d984649afa3dafe37f6"
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "id": "R1",
+      "text": "导出全部符合状态的订单",
+      "source": "演示需求：全部匹配订单",
+      "acceptance": "35条匹配订单返回35条，ID完整",
+      "required": true,
+      "status": "failed",
+      "node_ids": [
+        "N2"
+      ],
+      "evidence_ids": [
+        "E1"
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "字段为 id,status,total",
+      "source": "演示需求：指定导出字段",
+      "acceptance": "已返回记录的字段集合和值正确",
+      "required": true,
+      "status": "passed",
+      "node_ids": [
+        "N3"
+      ],
+      "evidence_ids": [
+        "E3"
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "不修改源数据",
+      "source": "演示需求：保留原始输入",
+      "acceptance": "调用前后深度相等，输出字典独立",
+      "required": true,
+      "status": "passed",
+      "node_ids": [
+        "N3"
+      ],
+      "evidence_ids": [
+        "E4"
+      ]
+    },
+    {
+      "id": "R4",
+      "text": "列表默认每页20条",
+      "source": "演示需求：保持列表行为",
+      "acceptance": "第一页20条、第二页15条，状态筛选正确",
+      "required": true,
+      "status": "passed",
+      "node_ids": [
+        "N1"
+      ],
+      "evidence_ids": [
+        "E2"
+      ]
+    },
+    {
+      "id": "R5",
+      "text": "下载交付链路",
+      "source": "附加范围说明，未提供实现，非本例必需目标",
+      "acceptance": "实际生成并下载后读取文件",
+      "required": false,
+      "status": "unchecked",
+      "node_ids": [
+        "N5"
+      ],
+      "evidence_ids": []
+    }
+  ],
+  "nodes": [
+    {
+      "id": "N1",
+      "title": "筛选与列表分页",
+      "role": "implemented",
+      "expected": "按状态筛选，列表维持20条分页",
+      "actual": "筛选后根据起点切片",
+      "input": "订单集合与状态条件",
+      "output": "订单列表或投影后的记录",
+      "scope": "演示程序的内存执行；未覆盖真实页面和下载",
+      "status": "passed",
+      "reason": "列表两页与状态条件符合预期",
+      "locations": [
+        {
+          "path": "orders.py",
+          "line": 1,
+          "symbol": "list_orders",
+          "end_line": 4
+        }
+      ],
+      "requirement_ids": [
+        "R4"
+      ],
+      "evidence_ids": [
+        "E2"
+      ],
+      "issue_ids": []
+    },
+    {
+      "id": "N2",
+      "title": "导出取数",
+      "role": "implemented",
+      "expected": "取得全部符合条件的订单",
+      "actual": "调用列表查询，继承默认第一页20条",
+      "input": "订单集合与状态条件",
+      "output": "订单列表或投影后的记录",
+      "scope": "演示程序的内存执行；未覆盖真实页面和下载",
+      "status": "failed",
+      "reason": "35条匹配订单只返回20条，复现了数据遗漏",
+      "locations": [
+        {
+          "path": "orders.py",
+          "line": 7,
+          "symbol": "export_orders",
+          "end_line": 9
+        }
+      ],
+      "requirement_ids": [
+        "R1"
+      ],
+      "evidence_ids": [
+        "E1"
+      ],
+      "issue_ids": [
+        "I1"
+      ]
+    },
+    {
+      "id": "N3",
+      "title": "字段投影与返回",
+      "role": "implemented",
+      "expected": "保留指定字段并保持输入不变",
+      "actual": "为每条已选订单创建新字典",
+      "input": "订单集合与状态条件",
+      "output": "订单列表或投影后的记录",
+      "scope": "演示程序的内存执行；未覆盖真实页面和下载",
+      "status": "passed",
+      "reason": "已返回记录字段与值正确，输入保持不变；不保证上游数据完整",
+      "locations": [
+        {
+          "path": "orders.py",
+          "line": 9,
+          "symbol": "export_orders: 字段投影",
+          "end_line": 9
+        }
+      ],
+      "requirement_ids": [
+        "R2",
+        "R3"
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4"
+      ],
+      "issue_ids": []
+    },
+    {
+      "id": "N4",
+      "title": "异常反馈路径",
+      "role": "implemented",
+      "expected": "结合调用方确认异常策略",
+      "actual": "提供的函数没有上层异常反馈代码",
+      "input": "订单集合与状态条件",
+      "output": "订单列表或投影后的记录",
+      "scope": "演示程序的内存执行；未覆盖真实页面和下载",
+      "status": "pending",
+      "reason": "只有静态阅读，未执行异常场景，不判定缺陷",
+      "locations": [
+        {
+          "path": "orders.py",
+          "line": 9,
+          "symbol": "export_orders: 返回边界",
+          "end_line": 9
+        }
+      ],
+      "requirement_ids": [],
+      "evidence_ids": [
+        "E5"
+      ],
+      "issue_ids": []
+    },
+    {
+      "id": "N5",
+      "title": "文件生成与下载",
+      "role": "unprovided",
+      "expected": "实际交付文件后回读内容",
+      "actual": "未提供相应实现",
+      "input": "订单集合与状态条件",
+      "output": "订单列表或投影后的记录",
+      "scope": "演示程序的内存执行；未覆盖真实页面和下载",
+      "status": "unchecked",
+      "reason": "超出演示源码范围，尚未验证",
+      "locations": [],
+      "requirement_ids": [
+        "R5"
+      ],
+      "evidence_ids": [],
+      "issue_ids": []
+    }
+  ],
+  "blocks": [
+    {
+      "id": "B1",
+      "title": "订单查询与分页",
+      "purpose": "为列表提供按状态筛选及每页20条的查询结果",
+      "node_ids": [
+        "N1"
+      ]
+    },
+    {
+      "id": "B2",
+      "title": "导出服务",
+      "purpose": "取得全部匹配订单、生成指定字段的返回值，并明确异常边界",
+      "node_ids": [
+        "N2",
+        "N3",
+        "N4"
+      ]
+    },
+    {
+      "id": "B3",
+      "title": "文件交付",
+      "purpose": "生成文件并交给用户下载；本例未提供实现",
+      "node_ids": [
+        "N5"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "N2",
+      "target": "N1",
+      "label": "调用列表查询",
+      "kind": "normal"
+    },
+    {
+      "source": "N1",
+      "target": "N3",
+      "label": "仅返回20条",
+      "kind": "normal",
+      "issue_ids": [
+        "I1"
+      ]
+    },
+    {
+      "source": "N3",
+      "target": "N5",
+      "label": "交付关系未核实",
+      "kind": "inferred"
+    },
+    {
+      "source": "N3",
+      "target": "N4",
+      "label": "异常策略待核实",
+      "kind": "exception"
+    }
+  ],
+  "issues": [
+    {
+      "id": "I1",
+      "title": "导出继承列表分页导致遗漏",
+      "status": "confirmed",
+      "severity": "blocking",
+      "node_ids": [
+        "N2"
+      ],
+      "evidence_ids": [
+        "E1"
+      ],
+      "impact": "匹配订单超过20条时导出不完整",
+      "suggestion": "拆分筛选与分页，导出使用全部筛选结果，保留列表原分页行为"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "runtime",
+      "command": "python -B verify_export.py",
+      "cwd": ".",
+      "exit_code": 1,
+      "outcome": "failed",
+      "expected": "35 paid orders, IDs 1..35",
+      "observed": "20 orders, IDs [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]",
+      "scope": "内存导出入口：跨页数据完整性",
+      "source_files": [
+        "orders.py",
+        "verify_export.py"
+      ],
+      "log_path": "verification.log",
+      "log_sha256": "2fc1d851044fff84b449c9dd6bd6b59b9c8687a35227f281e6482529fe14cb9e"
+    },
+    {
+      "id": "E2",
+      "kind": "runtime",
+      "command": "python -B verify_export.py --check E2",
+      "cwd": ".",
+      "exit_code": 0,
+      "outcome": "passed",
+      "expected": "First page IDs 1..20; second page IDs 21..35; only paid rows",
+      "observed": "First page 20; second page 15",
+      "scope": "状态筛选及列表两页分页",
+      "source_files": [
+        "orders.py",
+        "verify_export.py"
+      ],
+      "log_path": "E2.log",
+      "log_sha256": "8e7a4640eb87f19a8b332f275935cbe103ec90818835727f940ae338222f9e22"
+    },
+    {
+      "id": "E3",
+      "kind": "runtime",
+      "command": "python -B verify_export.py --check E3",
+      "cwd": ".",
+      "exit_code": 0,
+      "outcome": "passed",
+      "expected": "Exactly id,status,total with values matching source for returned rows",
+      "observed": "20 returned rows have fields id,status,total and matching total",
+      "scope": "已返回记录的字段投影",
+      "source_files": [
+        "orders.py",
+        "verify_export.py"
+      ],
+      "log_path": "E3.log",
+      "log_sha256": "87abf53ce89c0ebc9d65f1a49ae3f0cd448574f3063ae40af3550fed81097e40"
+    },
+    {
+      "id": "E4",
+      "kind": "runtime",
+      "command": "python -B verify_export.py --check E4",
+      "cwd": ".",
+      "exit_code": 0,
+      "outcome": "passed",
+      "expected": "Input deeply unchanged; output dictionaries distinct from source",
+      "observed": "Input unchanged=True; output dictionaries are new objects",
+      "scope": "输入数据及对象独立性",
+      "source_files": [
+        "orders.py",
+        "verify_export.py"
+      ],
+      "log_path": "E4.log",
+      "log_sha256": "2404a6027cbabd5c24d2476848de48552796c801e7e6706952fa44a947f4693e"
+    },
+    {
+      "id": "E5",
+      "kind": "static",
+      "command": "Read orders.py:1-9",
+      "cwd": ".",
+      "exit_code": null,
+      "outcome": "blocked",
+      "expected": "异常反馈策略需结合调用方确认",
+      "observed": "函数通过字典键读取数据；未提供上层异常反馈入口，尚未执行异常场景。",
+      "scope": "仅静态阅读，不确认错误，不作为本次必需需求",
+      "source_files": [
+        "orders.py"
+      ]
+    }
+  ]
+}

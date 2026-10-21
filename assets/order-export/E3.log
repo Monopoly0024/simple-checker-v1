@@ -1,0 +1,1 @@
+{"checks": [{"id": "E3", "passed": true, "expected": "Exactly id,status,total with values matching source for returned rows", "observed": "20 returned rows have fields id,status,total and matching total"}], "note": "No file download or actual web service exercised."}

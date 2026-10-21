@@ -1,0 +1,1 @@
+{"checks": [{"id": "E4", "passed": true, "expected": "Input deeply unchanged; output dictionaries distinct from source", "observed": "Input unchanged=True; output dictionaries are new objects"}], "note": "No file download or actual web service exercised."}

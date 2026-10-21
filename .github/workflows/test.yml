@@ -1,0 +1,32 @@
+name: Test skill tooling
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate skill metadata and structure
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          skill = Path("SKILL.md").read_text(encoding="utf-8")
+          match = re.match(r"^---\n(.*?)\n---\n", skill, re.S)
+          assert match, "SKILL.md frontmatter is missing"
+          assert re.search(r"^name: simple-checker-v1$", match.group(1), re.M)
+          assert re.search(r"^description: .+", match.group(1), re.M)
+          assert "[TODO:" not in skill
+          print("Skill metadata and required files are present")
+          PY
+      - name: Run report generator tests
+        run: python -B scripts/test_checker_report.py
+      - name: Validate example review
+        run: python -B scripts/checker_report.py validate assets/review.example.json

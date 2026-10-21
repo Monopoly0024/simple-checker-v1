@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+review-output/
+code-breakdown.md
+report.html
+report.md
+review.effective.json
