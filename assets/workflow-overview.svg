@@ -44,7 +44,7 @@
     <text x="98" y="592" class="small">只解释 / 拆解并验证</text>
   </g>
 
-  <path d="M350 480H393" class="flow"/>
+  <path d="M350 480H382V281H410" class="flow"/>
 
   <g filter="url(#shadow)">
     <rect x="420" y="210" width="600" height="142" rx="16" class="card"/>
@@ -81,7 +81,7 @@
   <path d="M720 693V712" class="flow"/>
   <path d="M1022 790H1052V379H1075" class="flow"/>
   <path d="M1052 531H1075" class="flow"/>
-  <path d="M1052 683H1075" class="flow"/>
+  <path d="M1052 766H1075" class="flow" stroke-dasharray="5 5"/>
 
   <g filter="url(#shadow)">
     <rect x="1090" y="254" width="302" height="214" rx="16" fill="#e5f1e8" stroke="#82ae8f" stroke-width="1.8"/>
@@ -90,14 +90,14 @@
     <text x="1112" y="339" class="output-title">HTML 图文拆解</text>
     <text x="1112" y="376" class="output-body">彩色板块图与导航</text>
     <text x="1112" y="404" class="output-body">源码位置、作用与证据</text>
-    <text x="1112" y="432" class="output-body">可交互、离线阅读</text>
+    <text x="1112" y="432" class="output-body">code-breakdown.html</text>
 
     <rect x="1090" y="495" width="302" height="166" rx="16" fill="#edf0f7" stroke="#9aa9c2" stroke-width="1.8"/>
     <rect x="1110" y="517" width="52" height="27" rx="13" fill="#445a78"/>
     <text x="1122" y="536" class="step">默认</text>
     <text x="1112" y="580" class="output-title">Markdown 文字版</text>
-    <text x="1112" y="617" class="output-body">板块职责、代码位置</text>
-    <text x="1112" y="643" class="output-body">检查结论与证据记录</text>
+    <text x="1112" y="617" class="output-body">职责、位置与验证证据</text>
+    <text x="1112" y="643" class="output-body">code-breakdown.md</text>
 
     <rect x="1090" y="688" width="302" height="166" rx="16" fill="#fff3dc" stroke="#d2ad64" stroke-width="1.8"/>
     <rect x="1110" y="710" width="52" height="27" rx="13" fill="#895d12"/>
