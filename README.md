@@ -4,9 +4,17 @@
 
 ## 使用流程
 
-[![从代码输入到图文拆解与验证结果的流程图](assets/workflow-overview.svg)](assets/workflow-overview.svg)
+[![适合手机阅读的纵向流程图：代码与目标输入，经拆解、解释、验证后生成 HTML 与 Markdown](assets/workflow-mobile.svg)](assets/workflow-mobile.svg)
+
+[查看横版完整流程图](assets/workflow-overview.svg)
 
 将代码和希望实现的目标交给 skill。它先按职责拆解代码，说明每块的作用和位置，再根据可运行的检查核验实际行为，最后生成独立的 HTML 图文拆解与 Markdown 文字版。需要完整审查时，还可生成总报告和有效记录。
+
+| 产出方式 | 文件 | 阅读内容 |
+| --- | --- | --- |
+| 默认生成 | `code-breakdown.html` | 图文拆解、板块导航、源码与验证证据 |
+| 默认生成 | `code-breakdown.md` | 板块职责、代码位置、结论与限制的文字版 |
+| 可选完整报告 | `report.html`、`report.md`、`review.effective.json` | 审查总览、需求验收和有效记录 |
 
 **颜色表示检查状态，不是文件质量评分：** 绿色为在所记录范围内实际验证通过，红色为有证据确认的问题，黄色为待核实，灰色为尚未验证。缺少运行条件时会明确说明，不会把静态阅读说成运行通过。
 
