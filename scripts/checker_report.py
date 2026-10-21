@@ -205,6 +205,22 @@ def assess(record, record_dir):
     membership = []
     for block in blocks.values():
         text_fields(block, ['title', 'purpose'], block['id'])
+        if 'explanation' in block:
+            explanation = block['explanation']
+            need(isinstance(explanation, dict), f'{block["id"]}: explanation must be object')
+            if 'summary' in explanation:
+                text_fields(explanation, ['summary'], block['id'])
+            if 'steps' in explanation:
+                steps = explanation['steps']
+                need(isinstance(steps, list) and 1 <= len(steps) <= 12,
+                     f'{block["id"]}: steps must contain 1..12 objects')
+                for step in steps:
+                    need(isinstance(step, dict), f'{block["id"]}: invalid step')
+                    text_fields(step, ['title', 'detail'], block['id'])
+            if 'example' in explanation:
+                example = explanation['example']
+                need(isinstance(example, dict), f'{block["id"]}: example must be object')
+                text_fields(example, ['input', 'expected', 'note'], block['id'])
         members = refs(block, 'node_ids', nodes)
         need(bool(members), f'{block["id"]}: block must contain nodes')
         membership.extend(block['node_ids'])
@@ -490,7 +506,7 @@ header p{overflow-wrap:anywhere}.badge{white-space:nowrap}.table-wrap table{min-
 </style></head><body><main><header><h1 id="title"></h1><p id="summary"></p><p id="meta" class="muted"></p><p id="journey" class="note"></p>
 <div class="legend" aria-label="状态图例"><span class="badge passed">绿色 · 已验证通过</span><span class="badge failed">红色 · 已确认问题</span><span class="badge pending">黄色 · 待核实</span><span class="badge unchecked">灰色 · 未验证</span></div>
 <p class="muted">点击节点查看职责、位置与证据。绿色只覆盖声明的验证范围。</p></header>
-<p><a href="code-breakdown.md">打开独立代码拆解文件</a></p>
+<p><a href="code-breakdown.html">打开 HTML 图文拆解</a> · <a href="code-breakdown.md">打开文字版</a></p>
 <div class="columns"><section class="panel"><h2>代码职责流程图</h2><div class="graph">@@SVG@@</div>
 <div class="toolbar"><button id="all" aria-pressed="true">全部节点</button><button id="problems" aria-pressed="false">仅问题与待验证</button></div><nav id="node-buttons" aria-label="节点选择"></nav><p id="filter-note" class="muted"></p></section>
 <section class="panel" id="detail" aria-live="polite"><h2 id="node-title"></h2><div id="node-status"></div><dl id="node-details"></dl><div id="node-issues"></div><div id="node-evidence"></div></section></div>
@@ -523,10 +539,134 @@ drawButtons();selectNode((data.nodes.find(n=>n.status==='failed')||data.nodes.fi
 </script></body></html>'''
 
 
+def illustrated_breakdown(data):
+    """Render escaped explanations and current source excerpts; execute nothing."""
+    esc = lambda value: html.escape(str(value), quote=True)
+    badge = lambda state: f'<span class="badge {state}">{LABELS[state]}</span>'
+    paragraph = lambda label, text: f'<div><small>{esc(label)}</small><p>{esc(text)}</p></div>'
+    nodes = {n['id']: n for n in data['nodes']}
+    issues = {i['id']: i for i in data['issues']}
+    evidence = {e['id']: e for e in data['evidence']}
+    root = Path(data['project_root'])
+
+    def excerpt(loc):
+        path = project_path(root, loc['path'])
+        first, last = loc['line'], loc.get('end_line', loc['line'])
+        label = f'{loc["path"]}:{first}' + (f'–{last}' if last != first else '')
+        symbol = ' · ' + loc['symbol'] if loc.get('symbol') else ''
+        parts = [f'<details class="source"><summary>{esc(label + symbol)}</summary>',
+                 f'<p class="source-path">{esc(path)} · L{first}–{last}</p>']
+        if loc['path'] in data['stale_files']:
+            parts.append('<p class="warning">源码已变化或缺失；此处为当前文件，旧结论待复验。</p>')
+        try:
+            raw = path.read_bytes()
+            registered = next(f['sha256'] for f in data['snapshot']['files'] if f['path'] == loc['path'])
+            if hashlib.sha256(raw).hexdigest() != registered.lower() and loc['path'] not in data['stale_files']:
+                raise ValueError('Source changed during rendering; regenerate the report')
+            lines = raw.decode('utf-8-sig').splitlines()
+            if first > len(lines) or last > len(lines):
+                parts.append('<p class="warning">位置超出当前文件，无法展示该范围，请重新核对行号。</p>')
+            else:
+                stop = min(last, first + 119)
+                rows = ''.join(f'<span class="code-line"><b>{i}</b><span>{esc(lines[i-1]) or " "}</span></span>'
+                               for i in range(first, stop + 1))
+                parts.append(f'<pre><code>{rows}</code></pre>')
+                if stop < last:
+                    parts.append(f'<p>仅展示前 120 行；登记范围 L{first}–{last}，请按位置查看余下源码。</p>')
+        except (OSError, UnicodeError):
+            parts.append('<p class="warning">源码缺失或不是 UTF-8 文本，未嵌入片段。</p>')
+        parts.append('</details>')
+        return ''.join(parts)
+
+    def proof(check):
+        stale = ' · 证据已过期，待复验' if check['id'] in data['stale_evidence'] else ''
+        kind = '实际执行 / 操作' if check['kind'] == 'runtime' else '静态阅读（不能证明运行通过）'
+        return (f'<details class="evidence"><summary>{check["id"]} · {esc(kind)} · '
+                f'{esc(check["outcome"] + stale)}</summary><div class="facts">'
+                + ''.join(paragraph(label, check[field]) for label, field in (
+                    ('预期', 'expected'), ('观察', 'observed'), ('验证范围', 'scope'),
+                    ('命令 / 操作记录（仅展示）', 'command'), ('工作目录', 'cwd')))
+                + paragraph('退出码', check.get('exit_code'))
+                + paragraph('日志', check.get('log_path', '无运行日志'))
+                + paragraph('日志 SHA-256', check.get('log_sha256', '不适用')) + '</div></details>')
+
+    navigation, content = [], []
+    for block in data['blocks']:
+        key, state = block['id'], block['status']
+        members = [nodes[n] for n in block['node_ids']]
+        navigation.append(f'<a href="#{key}"><b>{key}</b> {esc(block["title"])}{badge(state)}</a>')
+        content.append(f'<section class="block {state}" id="{key}"><div class="block-heading">'
+                       f'<span class="block-no">{key}</span><h2>{esc(block["title"])}</h2>{badge(state)}</div>'
+                       f'<p class="purpose">{esc(block["purpose"])}</p>')
+        explanation = block.get('explanation', {})
+        if explanation.get('summary'):
+            content.append(f'<p>{esc(explanation["summary"])}</p>')
+        content.append('<div class="reading-flow" aria-label="板块输入、职责与输出示意">'
+                       + paragraph('输入', '；'.join(dict.fromkeys(n['input'] for n in members)))
+                       + '<span class="arrow" aria-hidden="true">→</span>'
+                       + paragraph('承担职责', block['purpose'])
+                       + '<span class="arrow" aria-hidden="true">→</span>'
+                       + paragraph('输出', '；'.join(dict.fromkeys(n['output'] for n in members))) + '</div>')
+        if explanation.get('steps'):
+            content.append('<h3>这块怎样工作</h3><p class="muted">审查者提供的逻辑示意，不代表执行轨迹。</p><ol class="steps">'
+                           + ''.join(f'<li><strong>{esc(s["title"])}</strong><p>{esc(s["detail"])}</p></li>'
+                                     for s in explanation['steps']) + '</ol>')
+        if explanation.get('example'):
+            example = explanation['example']
+            content.append('<aside class="example"><h3>用一个例子理解</h3>'
+                           + paragraph('示意输入', example['input'])
+                           + paragraph('应有结果', example['expected'])
+                           + paragraph('示意边界（不作为运行证据）', example['note']) + '</aside>')
+        boundary = [e for e in data['edges'] if (e['source'] in block['node_ids']) != (e['target'] in block['node_ids'])]
+        if boundary:
+            content.append('<h3>与其他板块的关系</h3><ul class="relations">' + ''.join(
+                f'<li><a href="#{e["source"]}">{e["source"]} {esc(nodes[e["source"]]["title"])}</a>'
+                f' → <a href="#{e["target"]}">{e["target"]} {esc(nodes[e["target"]]["title"])}</a>'
+                f' · {esc(e["kind"])} · {esc(e["label"])}</li>' for e in boundary) + '</ul>')
+        for node in members:
+            content.append(f'<article class="node-card {node["status"]}" id="{node["id"]}">'
+                           f'<h3>{node["id"]} · {esc(node["title"])} {badge(node["status"])}</h3>'
+                           '<div class="facts">' + paragraph('应有作用', node['expected'])
+                           + paragraph('实际实现', node['actual'])
+                           + paragraph('节点输入', node['input']) + paragraph('节点输出', node['output'])
+                           + paragraph('这块实际起效了吗？', node['reason'])
+                           + paragraph('验证范围 / 限制', node['scope']) + '</div>')
+            if node.get('affected_by'):
+                content.append(paragraph('受上游影响（自身状态单独判断）', ', '.join(node['affected_by'])))
+            for req in (r for r in data['requirements'] if r['id'] in node['requirement_ids']):
+                content.append(paragraph(f'对应需求 {req["id"]} · {req["status"]}',
+                                         req['text'] + '；验收：' + req['acceptance']))
+            for issue in (issues[i] for i in node['issue_ids']):
+                issue_state = 'pending' if issue['stale'] or issue['status'] == 'suspected' else 'failed'
+                content.append(f'<aside class="issue {issue_state}"><h4>{issue["id"]} · {esc(issue["title"])}</h4>'
+                               + badge(issue_state) + paragraph('影响', issue['impact'])
+                               + paragraph('建议', issue['suggestion'])
+                               + paragraph('严重程度 / 证据', issue['severity'] + ' / ' + ', '.join(issue['evidence_ids'])) + '</aside>')
+            content.append('<h4>代码在哪里</h4>')
+            content.extend(excerpt(loc) for loc in node['locations'])
+            if not node['locations']:
+                content.append('<p class="muted">未提供实现或源码位置，不能编造片段。</p>')
+            content.append('<h4>生效证据</h4>')
+            content.extend(proof(evidence[e]) for e in node['evidence_ids'])
+            if not node['evidence_ids']:
+                content.append('<p class="muted">尚无验证证据。</p>')
+            content.append('</article>')
+        content.append('</section>')
+    template = (Path(__file__).resolve().parent.parent / 'assets' / 'code-breakdown.html').read_text(encoding='utf-8')
+    values = {'TITLE': esc(data['title']), 'DATE': esc(data['reviewed_at']),
+              'NAV': ''.join(navigation), 'CONTENT': ''.join(content), 'GRAPH': graph_svg(data),
+              'JOURNEY': esc(data.get('journey_note', data['block_grouping'])),
+              'STATUS': badge(data['overall']),
+              'SNAPSHOT': esc(json.dumps(data['snapshot'], ensure_ascii=False, indent=2)),
+              'ROOT': esc(data['project_root'])}
+    return re.sub(r'@@([A-Z]+)@@', lambda match: values[match.group(1)], template)
+
+
 def render(record, record_dir, out_dir, breakdown_only=False):
     data = assess(record, record_dir)
     out = Path(out_dir).resolve()
-    paths = {'breakdown': out / 'code-breakdown.md'}
+    paths = {'breakdown': out / 'code-breakdown.md',
+             'breakdown_html': out / 'code-breakdown.html'}
     if not breakdown_only:
         paths.update(markdown=out / 'report.md', html=out / 'report.html',
                      record=out / 'review.effective.json')
@@ -536,8 +676,10 @@ def render(record, record_dir, out_dir, breakdown_only=False):
     need(not any(p.resolve() in protected for p in paths.values()), 'Output would overwrite reviewed source or evidence')
     payload = json.dumps(data, ensure_ascii=False).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
     document = HTML_TEMPLATE.replace('@@TITLE@@', html.escape(data['title'])).replace('@@SVG@@', graph_svg(data)).replace('@@DATA@@', payload)
+    breakdown_document = illustrated_breakdown(data)
     out.mkdir(parents=True, exist_ok=True)
     paths['breakdown'].write_text(code_breakdown(data), encoding='utf-8')
+    paths['breakdown_html'].write_text(breakdown_document, encoding='utf-8')
     if not breakdown_only:
         paths['markdown'].write_text(markdown(data), encoding='utf-8')
         paths['html'].write_text(document, encoding='utf-8')

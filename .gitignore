@@ -3,8 +3,11 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+node_modules/
 review-output/
 code-breakdown.md
+code-breakdown.html
+!assets/code-breakdown.html
 report.html
 report.md
 review.effective.json

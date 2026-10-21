@@ -131,6 +131,9 @@ class ReportTests(unittest.TestCase):
         html = paths['html'].read_text(encoding='utf-8')
         self.assertNotIn('</script><script>alert(1)</script>', html)
         self.assertIn('textContent', html)
+        illustrated = paths['breakdown_html'].read_text(encoding='utf-8')
+        self.assertNotIn('</script><script>alert(1)</script>', illustrated)
+        self.assertIn('&lt;/script&gt;', illustrated)
 
     def test_output_includes_colored_graph_and_verifiable_details(self):
         paths = checker.render(self.record, self.root, self.root / 'report')
@@ -161,10 +164,107 @@ class ReportTests(unittest.TestCase):
     def test_render_always_produces_standalone_breakdown(self):
         paths = checker.render(self.record, self.root, self.root / 'report')
         self.assertIn('breakdown', paths)
+        self.assertIn('breakdown_html', paths)
         doc = paths['breakdown'].read_text(encoding='utf-8')
         for value in ('Return value', 'Return 1', 'Returns integer literal 1',
                       'unit execution only', 'python app.py', 'app.py:1'):
             self.assertIn(value, doc)
+        page = paths['breakdown_html'].read_text(encoding='utf-8')
+        for value in ('Return value', 'Return 1', 'app.py:1', '已验证通过',
+                      'role="button"', 'code-line'):
+            self.assertIn(value, page)
+
+    def test_breakdown_html_escapes_source_and_record_text(self):
+        source = self.root / 'app.py'
+        source.write_text('def run(): return "<unsafe>"\n', encoding='utf-8')
+        self.record['snapshot']['files'][0]['sha256'] = hashlib.sha256(
+            source.read_bytes()).hexdigest()
+        self.record['nodes'][0]['actual'] = '<unsafe> is returned'
+        paths = checker.render(self.record, self.root, self.root / 'report')
+        page = paths['breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('&lt;unsafe&gt;', page)
+        self.assertNotIn('<unsafe>', page)
+        self.assertIn('code-line', page)
+
+    def test_illustration_is_structured_and_escaped(self):
+        self.record['blocks'] = [{'id': 'B1', 'title': 'Service', 'purpose': 'Return value',
+            'node_ids': ['N1'], 'explanation': {'summary': 'A small <service>',
+            'steps': [{'title': 'Return', 'detail': 'Use the literal 1'}],
+            'example': {'input': 'No arguments', 'expected': '1', 'note': 'Illustration only'}}}]
+        page = checker.render(self.record, self.root, self.root / 'report')[
+            'breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('A small &lt;service&gt;', page)
+        self.assertIn('Use the literal 1', page)
+        self.assertIn('Illustration only', page)
+
+    def test_invalid_explanation_is_rejected(self):
+        self.record['blocks'] = [{'id': 'B1', 'title': 'Service', 'purpose': 'Return',
+            'node_ids': ['N1'], 'explanation': {'steps': '<script>bad()</script>'}}]
+        with self.assertRaisesRegex(ValueError, 'steps'):
+            self.assess()
+
+    def test_source_excerpt_marks_changed_and_invalid_ranges(self):
+        (self.root / 'app.py').write_text('def run(): return 2\n', encoding='utf-8')
+        self.record['nodes'][0]['locations'][0]['end_line'] = 99
+        page = checker.render(self.record, self.root, self.root / 'report')[
+            'breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('源码已变化', page)
+        self.assertIn('位置超出当前文件', page)
+        self.assertIn('class="block pending"', page)
+        self.assertNotIn('class="block passed"', page)
+
+    def test_html_cannot_overwrite_reviewed_source(self):
+        source = self.root / 'code-breakdown.html'
+        source.write_text('original\n', encoding='utf-8')
+        self.record['snapshot']['files'].append({'path': source.name,
+            'sha256': hashlib.sha256(source.read_bytes()).hexdigest()})
+        with self.assertRaisesRegex(ValueError, 'overwrite'):
+            checker.render(self.record, self.root, self.root, breakdown_only=True)
+        self.assertEqual(source.read_text(encoding='utf-8'), 'original\n')
+
+    def test_excerpt_limit_keeps_full_range_visible(self):
+        source = self.root / 'app.py'
+        source.write_text('\n'.join(f'value_{n} = {n}' for n in range(1, 151)), encoding='utf-8')
+        self.record['snapshot']['files'][0]['sha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
+        self.record['nodes'][0]['locations'][0]['end_line'] = 150
+        page = checker.render(self.record, self.root, self.root / 'report')[
+            'breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('app.py:1–150', page)
+        self.assertIn('value_120 = 120', page)
+        self.assertNotIn('value_121 = 121', page)
+        self.assertIn('仅展示前 120 行', page)
+
+    def test_missing_source_has_no_old_green_or_invented_excerpt(self):
+        (self.root / 'app.py').unlink()
+        page = checker.render(self.record, self.root, self.root / 'report')[
+            'breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('源码缺失或不是 UTF-8', page)
+        self.assertIn('class="block pending"', page)
+        self.assertNotIn('def run():', page)
+
+    def test_template_markers_in_text_are_not_replaced_again(self):
+        self.record['title'] = 'Literal @@CONTENT@@ <text>'
+        page = checker.render(self.record, self.root, self.root / 'report')[
+            'breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('Literal @@CONTENT@@ &lt;text&gt;', page)
+
+    def test_tampered_log_downgrades_html_without_claiming_source_changed(self):
+        (self.root / 'run.log').write_text('changed\n', encoding='utf-8')
+        page = checker.render(self.record, self.root, self.root / 'report')[
+            'breakdown_html'].read_text(encoding='utf-8')
+        self.assertIn('class="block pending"', page)
+        self.assertIn('证据已过期', page)
+        self.assertNotIn('源码已变化', page)
+
+    def test_breakdown_command_writes_markdown_and_html(self):
+        record = self.root / 'review.json'
+        record.write_text(json.dumps(self.record), encoding='utf-8')
+        out = self.root / 'breakdown-only'
+        result = subprocess.run([sys.executable, '-B', str(SCRIPT), 'breakdown', str(record),
+                                 '--out', str(out)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(sorted(p.name for p in out.iterdir()),
+                         ['code-breakdown.html', 'code-breakdown.md'])
 
     def test_block_groups_multiple_nodes_and_locations(self):
         self.record['nodes'][0]['locations'][0].update(symbol='run', end_line=1)
@@ -211,15 +311,6 @@ class ReportTests(unittest.TestCase):
         self.record['nodes'][0]['locations'][0]['end_line'] = 0
         with self.assertRaises(ValueError):
             self.assess()
-
-    def test_breakdown_command_writes_only_breakdown(self):
-        record = self.root / 'review.json'
-        record.write_text(json.dumps(self.record), encoding='utf-8')
-        out = self.root / 'breakdown-only'
-        result = subprocess.run([sys.executable, '-B', str(SCRIPT), 'breakdown', str(record),
-                                 '--out', str(out)], capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(sorted(p.name for p in out.iterdir()), ['code-breakdown.md'])
 
     def test_breakdown_cannot_overwrite_reviewed_source(self):
         source = self.root / 'code-breakdown.md'

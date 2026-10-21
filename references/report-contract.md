@@ -24,13 +24,36 @@ python <skill目录>/scripts/checker_report.py render <review.json> --out <审�
 
 ## 独立代码拆解文件与板块 blocks
 
-`breakdown` 仅生成 `code-breakdown.md`；`render` 生成该文件及原有三个报告文件。两种方式使用同一有效证据判定，独立文件不需要打开总报告即可阅读。
+从工具版本 1.1.0 起，`breakdown` 生成 `code-breakdown.html` 和 `code-breakdown.md`；`render` 再生成 `report.md`、`report.html`、`review.effective.json`。返回路径新增键 `breakdown_html`，原 `breakdown` 仍指 Markdown。记录 schema_version 保持 `1.0`，旧记录可直接使用。两种方式使用同一有效证据判定，独立文件不需要打开总报告即可阅读。
 
 每板块：`id, title, purpose, node_ids`。ID 为 B1、B2…；title 是功能名称，purpose 说明整体职责，node_ids 包含属于此板块的节点。一板块可对应多个节点或多个文件。每个审查节点恰好归入一个主板块；跨板块调用仍用 edges 表达。板块覆盖本次全部已审查节点，但不自动代表全部项目源码。
 
 板块状态由当前有效节点汇总：failed 优先，然后 pending、unchecked，全部 passed 才 passed。不能手写更乐观的板块结论覆盖节点失败。为兼容旧记录，未提供 blocks 时回退为每节点一板块，并在独立文件明确注明分组未经整体确认。新审查应人工按功能填写。
 
 拆解文件包含板块彩色图、作用与位置总表、逐节点输入输出、应有/实际行为、生效证据、问题和覆盖边界。代码位置链接使用绝对路径和起始行号；符号及范围按提供值显示。依赖或验证文件未单独拆成板块时列入覆盖说明。
+
+### HTML 图文补充 explanation（可选）
+
+各板块可加入 `explanation` 对象，让通俗讲解与验证记录共同保存：
+
+```json
+{
+  "summary": "先按状态筛选，再切出当前页；列表分页本身符合要求。",
+  "steps": [
+    {"title": "筛选", "detail": "保留 status 相同的订单。"},
+    {"title": "分页", "detail": "按起点取最多 20 条。"}
+  ],
+  "example": {
+    "input": "35 条 paid 订单，第一页，每页 20 条",
+    "expected": "列表应返回前 20 条，导出全部则应另取 35 条。",
+    "note": "教学示意，不代替实际运行记录；运行观察见关联 evidence。"
+  }
+}
+```
+
+`summary` 为非空文本；`steps` 为 1–12 项，每项含非空 `title, detail`；`example` 含非空 `input, expected, note`。均为纯文本，不接受可执行 HTML。无需步骤图时省略该字段；无需教学例子时省略 example。每块始终有输入→职责→输出示意图。步骤图不是实时执行轨迹，也不会把节点改绿。
+
+HTML 将从登记源码读取 UTF-8 片段，包含行号、完整路径、符号及范围，每位置最多 120 行并标注截断。缺失、编码不可读、行号越界时提示而不伪造。源文件变化时显示当前文件并提示过期，同时有效节点状态降级。页面仅是离线快照，不监听后续文件变化；生成文件可能包含私有源码与绝对路径，不能未经用户要求放入公共仓库。所有文本均转义，无 CDN 或网络请求。
 
 ## 需求 requirements
 

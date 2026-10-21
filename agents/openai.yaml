@@ -1,4 +1,4 @@
 interface:
   display_name: "简单的检查者1.0"
-  short_description: "独立生成代码板块拆解文件，标明作用、代码位置及实际生效证据"
-  default_prompt: "使用 $simple-checker-v1 检查刚刚的代码，独立生成代码拆解文件，说明各板块的作用、代码位置和实际验证结果，并展示彩色流程图。"
+  short_description: "生成离线 HTML 图文拆解，说明板块作用、源码位置与实际生效证据"
+  default_prompt: "使用 $simple-checker-v1 检查刚刚的代码，生成 HTML 图文拆解和文字版，逐块展示输入输出、作用、源码位置及实际验证结果，并用彩色流程图突出问题。"

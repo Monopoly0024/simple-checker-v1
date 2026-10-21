@@ -6,13 +6,17 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Validate skill metadata and structure
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -30,3 +34,24 @@ jobs:
         run: python -B scripts/test_checker_report.py
       - name: Validate example review
         run: python -B scripts/checker_report.py validate assets/review.example.json
+      - name: Render illustrated example
+        run: python -B scripts/checker_report.py render assets/review.example.json --out review-output
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-save --package-lock=false playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: python -B scripts/checker_report.py render assets/review.example.json --out review-output
+      - run: node scripts/test_breakdown_browser.cjs review-output/code-breakdown.html review-output/browser
+      - uses: actions/upload-artifact@v4
+        with:
+          name: illustrated-example
+          path: review-output/
