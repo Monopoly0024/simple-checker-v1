@@ -4,9 +4,12 @@
 
 ## 使用流程
 
-[![适合手机阅读的纵向流程图：代码与目标输入，经拆解、解释、验证后生成 HTML 与 Markdown](assets/workflow-mobile.svg)](assets/workflow-mobile.svg)
+<picture>
+  <source media="(max-width: 640px)" srcset="assets/workflow-mobile.svg">
+  <img src="assets/workflow-overview.svg" alt="使用流程：输入代码与目标，经拆解、解释和验证，生成 HTML 图文拆解及 Markdown 文字版。电脑显示横版，小屏显示纵版。">
+</picture>
 
-[查看横版完整流程图](assets/workflow-overview.svg)
+[查看横版完整流程图](assets/workflow-overview.svg) · [查看手机纵版流程图](assets/workflow-mobile.svg)
 
 将代码和希望实现的目标交给 skill。它先按职责拆解代码，说明每块的作用和位置，再根据可运行的检查核验实际行为，最后生成独立的 HTML 图文拆解与 Markdown 文字版。需要完整审查时，还可生成总报告和有效记录。
 
