@@ -1,4 +1,6 @@
 # Publish committed documentation and apply the repository's public metadata.
+param([string]$ProxyUrl)
+
 $ErrorActionPreference = 'Stop'
 Write-Host '[1/6] Checking local repository and Git...'
 $repoPath = Split-Path -Parent $PSScriptRoot
@@ -26,11 +28,44 @@ $metadataPath = Join-Path $repoPath 'assets\github-metadata.json'
 $metadata = Get-Content -LiteralPath $metadataPath -Encoding UTF8 -Raw | ConvertFrom-Json
 if (-not $metadata.description -or -not $metadata.topics) { throw 'Repository metadata is incomplete.' }
 
+$networkOptions = @('-c', 'http.sslBackend=openssl', '-c', 'http.version=HTTP/1.1', '-c', 'http.lowSpeedLimit=1', '-c', 'http.lowSpeedTime=30')
+$apiOptions = @{TimeoutSec = 30}
+if (-not $ProxyUrl) {
+    $configuredProxy = & $gitExe -C $repoPath config --get-urlmatch http.proxy $remote 2>$null
+    $hasGitProxy = $LASTEXITCODE -eq 0
+    $hasEnvironmentProxy = $env:HTTPS_PROXY -or $env:ALL_PROXY -or $env:HTTP_PROXY
+    if (-not $hasGitProxy -and -not $hasEnvironmentProxy) {
+        try {
+            $githubUri = [Uri]'https://github.com/'
+            $systemProxy = [Net.WebRequest]::GetSystemWebProxy().GetProxy($githubUri)
+            if ($systemProxy -and $systemProxy.AbsoluteUri -ne $githubUri.AbsoluteUri) {
+                $ProxyUrl = $systemProxy.AbsoluteUri
+                Write-Host 'Using the Windows system proxy for Git and GitHub API requests.'
+            }
+        } catch {
+            Write-Host 'Could not inspect the Windows system proxy. Existing Git/environment settings will be used.'
+        }
+    }
+}
+if ($ProxyUrl) {
+    $proxyUri = $null
+    if (-not [Uri]::TryCreate($ProxyUrl, [UriKind]::Absolute, [ref]$proxyUri) -or $proxyUri.Scheme -notin @('http', 'https') -or $proxyUri.UserInfo) {
+        throw 'ProxyUrl must be an HTTP(S) proxy address without embedded credentials.'
+    }
+    $networkOptions += @('-c', "http.proxy=$ProxyUrl")
+    $apiOptions.Proxy = $ProxyUrl
+    Write-Host ('Network route: proxy ' + $proxyUri.Authority)
+} else {
+    Write-Host 'Network route: existing Git/environment settings; no additional proxy applied.'
+}
+
 Write-Host "[2/6] Pushing main to $owner/$repository..."
 Write-Host 'Waiting here means Git is connecting, transferring, or requesting sign-in.'
 Write-Host 'Network transfers abort after 30 seconds below 1 byte/second. Complete any GitHub sign-in prompt.'
-& $gitExe -C $repoPath -c http.sslBackend=openssl -c http.lowSpeedLimit=1 -c http.lowSpeedTime=30 push --progress origin main
-if ($LASTEXITCODE -ne 0) { throw 'Push failed. Repository metadata was not changed.' }
+& $gitExe -C $repoPath @networkOptions push --progress origin main
+if ($LASTEXITCODE -ne 0) {
+    throw 'Push failed before metadata updates. For a connection reset/timeout, check the proxy app or rerun with -ProxyUrl using its actual HTTP proxy address.'
+}
 
 $credentialLines = $null
 $token = $null
@@ -38,7 +73,7 @@ $headers = $null
 try {
     Write-Host '[3/6] Reading GitHub authorization from the configured Git helper...'
     # The credential helper returns a secret only in memory; never log or save it.
-    $credentialLines = "protocol=https`nhost=github.com`n`n" | & $gitExe -C $repoPath credential fill
+    $credentialLines = "protocol=https`nhost=github.com`n`n" | & $gitExe -C $repoPath @networkOptions credential fill
     if ($LASTEXITCODE -ne 0) { throw 'Cannot obtain GitHub credentials from the configured Git helper.' }
     foreach ($line in $credentialLines) {
         if ($line.StartsWith('password=')) { $token = $line.Substring(9) }
@@ -55,22 +90,22 @@ try {
     try {
         [Net.ServicePointManager]::SecurityProtocol = $previousTls -bor [Net.SecurityProtocolType]::Tls12
         Write-Host '[4/6] Updating the bilingual About description and repository topics...'
-        $currentTopics = Invoke-RestMethod -Uri "$api/topics" -Headers $headers -TimeoutSec 30
+        $currentTopics = Invoke-RestMethod -Uri "$api/topics" -Headers $headers @apiOptions
         $topics = @(@($currentTopics.names) + @($metadata.topics) | Sort-Object -Unique)
         if ($topics.Count -gt 20) { throw 'Adding these topics would exceed the 20-topic limit.' }
         $descriptionBody = [Text.Encoding]::UTF8.GetBytes((@{description = $metadata.description} | ConvertTo-Json -Compress))
         $topicsBody = [Text.Encoding]::UTF8.GetBytes((@{names = $topics} | ConvertTo-Json -Compress))
-        $null = Invoke-RestMethod -Method Patch -Uri $api -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $descriptionBody -TimeoutSec 30
-        $null = Invoke-RestMethod -Method Put -Uri "$api/topics" -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $topicsBody -TimeoutSec 30
+        $null = Invoke-RestMethod -Method Patch -Uri $api -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $descriptionBody @apiOptions
+        $null = Invoke-RestMethod -Method Put -Uri "$api/topics" -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $topicsBody @apiOptions
         Write-Host '[5/6] Reading back the description and topics...'
-        $result = Invoke-RestMethod -Uri $api -Headers $headers -TimeoutSec 30
-        $resultTopics = Invoke-RestMethod -Uri "$api/topics" -Headers $headers -TimeoutSec 30
+        $result = Invoke-RestMethod -Uri $api -Headers $headers @apiOptions
+        $resultTopics = Invoke-RestMethod -Uri "$api/topics" -Headers $headers @apiOptions
         if ($result.description -cne $metadata.description) { throw 'Description readback differs from the requested value.' }
         if (@($topics | Where-Object { $_ -notin $resultTopics.names }).Count) { throw 'Topics readback is incomplete.' }
         $localHead = & $gitExe -C $repoPath rev-parse HEAD
         if ($LASTEXITCODE -ne 0) { throw 'Cannot read local HEAD.' }
         Write-Host '[6/6] Comparing the local commit with GitHub main...'
-        $remoteHead = & $gitExe -C $repoPath -c http.sslBackend=openssl -c http.lowSpeedLimit=1 -c http.lowSpeedTime=30 ls-remote origin refs/heads/main
+        $remoteHead = & $gitExe -C $repoPath @networkOptions ls-remote origin refs/heads/main
         if ($LASTEXITCODE -ne 0 -or -not $remoteHead -or ($remoteHead -split '\s+')[0] -ne $localHead) {
             throw 'Remote main does not match the local commit.'
         }

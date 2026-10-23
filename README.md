@@ -99,6 +99,8 @@ CI runs Python tests on Windows and Linux and checks the illustrated report in C
 
 Maintainers can run `powershell -NoProfile -File scripts/publish-github.ps1` from a clean, committed `main` checkout. It pushes `main`, applies the bilingual About description and topics from [repository metadata](assets/github-metadata.json), preserves existing topics, and verifies the result. It uses the configured Git credential helper in memory; the account must have permission to edit repository settings. If a metadata request fails after the push, rerun the script after resolving access.
 
+The helper uses OpenSSL and HTTP/1.1 for Git. It also uses the Windows system proxy when no Git or proxy environment setting is present. If Git reports a connection reset or timeout, pass `-ProxyUrl` with the actual HTTP proxy address shown by your proxy application. The override applies only to this run; it does not edit global Git configuration. A browser connection alone does not verify the Git connection.
+
 ## License
 
 No open-source license is currently included. Rights and reuse permissions remain with the rights holder unless a license is added.
@@ -197,6 +199,8 @@ CI 在 Windows/Linux 运行 Python 测试，并在 Chromium 检查源码展开�
 ## 仓库发布
 
 维护者可在已提交且无未保存修改的 `main` 分支运行 `powershell -NoProfile -File scripts/publish-github.ps1`。脚本会推送 `main`，读取[仓库元数据](assets/github-metadata.json)设置英中双语 About 简介和主题标签，保留已有标签，并回读核对。凭据仅通过现有 Git 凭据助手在内存中使用；账号需有修改仓库设置的权限。如果推送后设置简介或标签失败，解决访问问题后可重新运行脚本。
+
+脚本对 Git 使用 OpenSSL 和 HTTP/1.1；没有现有 Git 或代理环境设置时，会尝试使用 Windows 系统代理。若 Git 报连接重置或超时，可通过 `-ProxyUrl` 传入代理软件显示的实际 HTTP 代理地址。本次参数不会修改全局 Git 配置。浏览器能连接 GitHub，并不代表 Git 的连接也已通畅。
 
 ## 许可证
 
