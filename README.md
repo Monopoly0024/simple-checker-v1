@@ -1,6 +1,119 @@
-# 简单的检查者 1.0
+# Simple Checker
+
+**Understand and verify the code behind your Vibe Coding workflow.**
+
+[English](#english) · [中文说明](#chinese)
+
+<a id="english"></a>
+
+## AI-assisted coding, with explanations you can check
+
+Simple Checker is a Codex skill for people who build and iterate with AI coding agents. It breaks AI-written code into functional blocks, explains what each block does and where it lives, and checks whether the implementation actually meets your goals using recorded evidence.
+
+Use it after a Vibe Coding session, when inheriting unfamiliar AI-generated code, or before accepting a change. Start with a readable explanation, then inspect the behavior, evidence, and remaining gaps. Code that looks plausible is not enough to establish that a feature works.
+
+**Themes:** AI-assisted coding · Vibe Coding · code explanation · evidence-based review.
+
+## How it works
+
+<picture>
+  <source media="(max-width: 640px)" srcset="assets/workflow-mobile-en.svg">
+  <img src="assets/workflow-overview-en.svg" alt="Simple Checker workflow: provide code and goals, map functional blocks, explain responsibilities and source locations, verify behavior, and generate HTML and Markdown breakdowns. Desktop uses a landscape diagram; small screens use a portrait diagram.">
+</picture>
+
+[Full desktop diagram](assets/workflow-overview-en.svg) · [Mobile diagram](assets/workflow-mobile-en.svg)
+
+Provide your code and intended outcome. The skill maps functional blocks, explains their responsibilities and source locations, performs applicable checks, and generates standalone explanations. A full review report is available when requested.
+
+| Output | Files | What you get |
+| --- | --- | --- |
+| Default | `code-breakdown.html` | Illustrated explanation, block navigation, source excerpts, and verification evidence |
+| Default | `code-breakdown.md` | Responsibilities, code locations, findings, and limitations in a text document |
+| Optional full review | `report.html`, `report.md`, `review.effective.json` | Review overview, requirements acceptance, and the effective review record |
+
+**Colors describe verification status, not a quality score:** green means verified within the recorded scope; red means a confirmed issue; yellow means pending verification; gray means unchecked. Static reading does not count as a successful runtime check. Missing runtime access is recorded explicitly.
+
+## Features
+
+- Define acceptance criteria from your goals before reviewing the implementation.
+- Explain functional blocks through inputs, processing, outputs, and upstream/downstream relationships.
+- Identify source files, symbols, line ranges, and relevant code excerpts.
+- Connect findings to actual observations, evidence, and verification limits.
+- Read offline HTML reports with diagrams, keyboard navigation, expandable source, filtering, and print support.
+- Detect changes to registered source files and evidence logs with SHA-256 snapshots; stale evidence requires revalidation.
+
+The generator validates and displays an authored review record. It does not execute recorded commands or discover semantic defects on its own. The reviewing agent reads the code, performs appropriate checks, and records the results.
+
+## Install and use
+
+Copy the complete `simple-checker-v1` directory into your configured Codex personal skills directory. The default Windows location is:
+
+```text
+%USERPROFILE%\.codex\skills\simple-checker-v1
+```
+
+Start a new Codex conversation or refresh the skill list, then ask:
+
+```text
+$simple-checker-v1 Review the code we just changed. Explain each functional block,
+identify its source locations, verify whether it meets my goals, and generate
+an HTML breakdown with a Markdown companion. Review only; do not change the code.
+```
+
+You do not need to repeat this wording exactly. The skill currently defaults to Simplified Chinese for explanations and reports; request English explicitly when needed. This bilingual README does not change that default.
+
+Tool version: **1.1.0**. Invocation: `$simple-checker-v1`. Display name: **简单的检查者1.0**. Update the complete installed directory to include the generator and templates; updating `SKILL.md` alone is insufficient. Further Chinese documentation: [usage guide](使用说明.md) and [review record contract](references/report-contract.md).
+
+## Validate and generate reports
+
+Python 3 is required; the generator uses only the standard library.
+
+```text
+python -B scripts/test_checker_report.py
+python -B scripts/checker_report.py validate assets/review.example.json
+python -B scripts/checker_report.py breakdown assets/review.example.json --out review-output
+python -B scripts/checker_report.py render assets/review.example.json --out review-output
+```
+
+Open `review-output/code-breakdown.html` for the illustrated explanation. `breakdown` produces HTML and Markdown; `render` additionally produces the full review files. Existing schema `1.0` records remain supported.
+
+The bundled order-export example deliberately contains a pagination bug: exporting more than 20 matching orders loses records. Rebuild its reproducible evidence with:
+
+```text
+python -B assets/order-export/build_example.py
+```
+
+The example is not evidence for your project. Generated reports may include source code and local paths; share them according to your project's rules.
+
+Optional browser checks require Node.js and Playwright; the report generator does not:
+
+```text
+npm install --no-save --package-lock=false playwright@1.56.1
+npx playwright install chromium
+node scripts/test_breakdown_browser.cjs review-output/code-breakdown.html review-output/browser
+```
+
+CI runs Python tests on Windows and Linux and checks the illustrated report in Chromium, including source expansion, keyboard navigation, filtering, offline requests, and 390/700/1024px layouts. The example reports and screenshots are attached to Actions runs.
+
+## Repository publishing
+
+Maintainers can run `powershell -NoProfile -File scripts/publish-github.ps1` from a clean, committed `main` checkout. It pushes `main`, applies the bilingual About description and topics from [repository metadata](assets/github-metadata.json), preserves existing topics, and verifies the result. It uses the configured Git credential helper in memory; the account must have permission to edit repository settings. If a metadata request fails after the push, rerun the script after resolving access.
+
+## License
+
+No open-source license is currently included. Rights and reuse permissions remain with the rights holder unless a license is added.
+
+---
+
+<a id="chinese"></a>
+
+# 简单的检查者 1.0 · 中文说明
 
 一个 Codex skill，可用于拆解ai编写或修改的代码，说明各功能板块的作用和代码位置，并用可复核的运行证据检查作用是否生效、原始需求是否完成--辅助你与ai代码共同工作。适用于重度ai编码依赖，可以在不太懂代码编写的同时读懂ai写的代码结构和思路。
+
+**主题：AI 辅助编程 · Vibe Coding · 代码解释 · 基于证据的审查。** 适合在 AI 编程完成一个功能后、接手不熟悉的 AI 代码时，或接受修改前使用。先读懂代码，再核对它是否完成目标。
+
+[Back to English / 返回英文](#english)
 
 ## 使用流程
 
@@ -80,6 +193,10 @@ node scripts/test_breakdown_browser.cjs review-output/code-breakdown.html review
 ```
 
 CI 在 Windows/Linux 运行 Python 测试，并在 Chromium 检查源码展开、键盘跳转、筛选、390/700/1024px 宽度及离线请求；订单示例 HTML 和截图随 Actions 产物保存。
+
+## 仓库发布
+
+维护者可在已提交且无未保存修改的 `main` 分支运行 `powershell -NoProfile -File scripts/publish-github.ps1`。脚本会推送 `main`，读取[仓库元数据](assets/github-metadata.json)设置英中双语 About 简介和主题标签，保留已有标签，并回读核对。凭据仅通过现有 Git 凭据助手在内存中使用；账号需有修改仓库设置的权限。如果推送后设置简介或标签失败，解决访问问题后可重新运行脚本。
 
 ## 许可证
 

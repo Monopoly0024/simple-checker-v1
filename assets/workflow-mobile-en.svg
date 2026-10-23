@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="1110" viewBox="0 0 360 1110" role="img" aria-labelledby="title desc">
+  <title id="title">Simple Checker: understand AI-written code</title>
+  <desc id="desc">Mobile overview. Provide code and goals, map blocks, explain responsibilities, verify behavior, and record status. Default outputs are HTML and Markdown explanations. Full reports are optional. Unchecked paths remain explicit.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#698173" />
+    </marker>
+    <style>
+      text{font-family:"Segoe UI","Microsoft YaHei",sans-serif;fill:#203b30}
+      .heading{font-size:25px;font-weight:700}
+      .title{font-size:22px;font-weight:700}
+      .body{font-size:20px;fill:#405b4d}
+      .num{font-size:20px;font-weight:700;fill:#176549}
+      .card{fill:#fff;stroke:#c9d6cb;stroke-width:1.5}
+      .flow{fill:none;stroke:#698173;stroke-width:2;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="360" height="1110" rx="20" fill="#f4f6f0" />
+  <text x="24" y="45" class="heading">Understand AI code</text>
+  <text x="24" y="79" class="body">Simple Checker / Vibe Coding</text>
+  <rect x="16" y="106" width="328" height="100" rx="14" fill="#e6f1f4" stroke="#8cb5c2" stroke-width="1.5" />
+  <text x="34" y="143" class="title">Provide code + your goals</text>
+  <text x="34" y="177" class="body">A file, project, or recent change</text>
+  <path d="M180 210V233" class="flow" />
+  <rect x="16" y="246" width="328" height="82" rx="14" class="card" />
+  <text x="34" y="281" class="num">01</text>
+  <text x="76" y="281" class="title">Map code blocks</text>
+  <text x="34" y="312" class="body">Find entry points and data flow</text>
+  <path d="M180 332V355" class="flow" />
+  <rect x="16" y="368" width="328" height="82" rx="14" class="card" />
+  <text x="34" y="403" class="num">02</text>
+  <text x="76" y="403" class="title">Explain each block</text>
+  <text x="34" y="434" class="body">Show inputs, outputs, and source</text>
+  <path d="M180 454V477" class="flow" />
+  <rect x="16" y="490" width="328" height="82" rx="14" class="card" />
+  <text x="34" y="525" class="num">03</text>
+  <text x="76" y="525" class="title">Verify behavior</text>
+  <text x="34" y="556" class="body">Run checks against your goals</text>
+  <path d="M180 576V599" class="flow" />
+  <rect x="16" y="612" width="328" height="82" rx="14" class="card" />
+  <text x="34" y="647" class="num">04</text>
+  <text x="76" y="647" class="title">Record review status</text>
+  <text x="34" y="678" class="body">Link evidence and state the scope</text>
+  <path d="M180 698V721" class="flow" />
+  <rect x="16" y="734" width="328" height="166" rx="14" fill="#e6f0e8" stroke="#82aa8d" stroke-width="1.5" />
+  <text x="34" y="772" class="title">Default: two explanations</text>
+  <path d="M34 790H326" stroke="#b4cbb8" />
+  <text x="34" y="825" class="title">Illustrated HTML guide</text>
+  <text x="34" y="859" class="title">Markdown companion</text>
+  <text x="34" y="886" class="body">Roles, locations, and evidence</text>
+  <rect x="16" y="922" width="328" height="94" rx="14" fill="#fff3dc" stroke="#cda65a" stroke-width="1.5" />
+  <text x="34" y="959" class="title">Optional: full review</text>
+  <text x="34" y="992" class="body">Overview + effective record</text>
+  <text x="24" y="1053" class="body">Cannot run it? Mark unchecked.</text>
+  <text x="24" y="1085" class="body">A local pass is not a full pass.</text>
+</svg>
