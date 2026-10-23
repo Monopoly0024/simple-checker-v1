@@ -85,11 +85,11 @@ def main():
     nodes[1]['locations'][0].update(symbol='export_orders', end_line=9)
     nodes[2]['locations'][0].update(symbol='export_orders: 字段投影', end_line=9)
     nodes[3]['locations'][0].update(symbol='export_orders: 返回边界', end_line=9)
-    record = {'schema_version': '1.0', 'title': '简单的检查者1.0 · 订单导出示例',
+    record = {'schema_version': '1.0', 'title': '简单的审阅者1.0 · 订单导出示例',
         'reviewed_at': datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
         'project_root': './order-export', 'mode': 'review',
         'journey_note': '已从 export_orders 入口执行35条匹配数据；导出遗漏15条。字段转换单独通过。实际下载和异常反馈尚未验证。此报告为内置示例。',
-        'snapshot': {'base_revision': 'standalone-example', 'notes': '示例源代码未修改，缺陷故意保留以验证检查者。',
+        'snapshot': {'base_revision': 'standalone-example', 'notes': '示例源代码未修改，缺陷故意保留以验证审阅者。',
                      'files': [{'path': name, 'sha256': sha(ROOT / name)} for name in ('orders.py', 'verify_export.py')]},
         'requirements': requirements, 'nodes': nodes,
         'blocks': [{'id': 'B1', 'title': '订单查询与分页',

@@ -512,7 +512,7 @@ header p{overflow-wrap:anywhere}.badge{white-space:nowrap}.table-wrap table{min-
 <section class="panel" id="detail" aria-live="polite"><h2 id="node-title"></h2><div id="node-status"></div><dl id="node-details"></dl><div id="node-issues"></div><div id="node-evidence"></div></section></div>
 <section class="panel"><h2>需求验收</h2><div class="table-wrap"><table><thead><tr><th>需求与来源</th><th>验收条件</th><th>状态</th><th>节点 / 证据</th></tr></thead><tbody id="requirements"></tbody></table></div></section>
 <section class="panel"><h2>检查记录与快照</h2><div id="all-evidence"></div><details><summary>查看文件快照</summary><pre id="snapshot"></pre></details></section>
-<footer>简单的检查者1.0 · 离线报告，无网络请求。此文件是审查时的快照；代码或日志变化后需重新生成。工具校验引用及哈希，不替代需求判断、真实验证或端到端验收。</footer>
+<footer>简单的审阅者1.0 · 离线报告，无网络请求。此文件是审查时的快照；代码或日志变化后需重新生成。工具校验引用及哈希，不替代需求判断、真实验证或端到端验收。</footer>
 </main><script id="review-data" type="application/json">@@DATA@@</script><script>
 'use strict';
 const data=JSON.parse(document.getElementById('review-data').textContent);

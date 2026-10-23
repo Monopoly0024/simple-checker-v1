@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "title": "简单的检查者1.0 · 订单导出示例",
+  "title": "简单的审阅者1.0 · 订单导出示例",
   "reviewed_at": "2026-10-21T14:30:28+08:00",
   "project_root": "./order-export",
   "mode": "review",
   "journey_note": "已从 export_orders 入口执行35条匹配数据；导出遗漏15条。字段转换单独通过。实际下载和异常反馈尚未验证。此报告为内置示例。",
   "snapshot": {
     "base_revision": "standalone-example",
-    "notes": "示例源代码未修改，缺陷故意保留以验证检查者。",
+    "notes": "示例源代码未修改，缺陷故意保留以验证审阅者。",
     "files": [
       {
         "path": "orders.py",

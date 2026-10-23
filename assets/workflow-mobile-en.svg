@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="1110" viewBox="0 0 360 1110" role="img" aria-labelledby="title desc">
-  <title id="title">Simple Checker: understand AI-written code</title>
+  <title id="title">Simple Reviewer: understand AI-written code</title>
   <desc id="desc">Mobile overview. Provide code and goals, map blocks, explain responsibilities, verify behavior, and record status. Default outputs are HTML and Markdown explanations. Full reports are optional. Unchecked paths remain explicit.</desc>
   <defs>
     <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
@@ -18,7 +18,7 @@
   </defs>
   <rect width="360" height="1110" rx="20" fill="#f4f6f0" />
   <text x="24" y="45" class="heading">Understand AI code</text>
-  <text x="24" y="79" class="body">Simple Checker / Vibe Coding</text>
+  <text x="24" y="79" class="body">Simple Reviewer / Vibe Coding</text>
   <rect x="16" y="106" width="328" height="100" rx="14" fill="#e6f1f4" stroke="#8cb5c2" stroke-width="1.5" />
   <text x="34" y="143" class="title">Provide code + your goals</text>
   <text x="34" y="177" class="body">A file, project, or recent change</text>

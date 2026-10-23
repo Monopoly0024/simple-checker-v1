@@ -1,5 +1,5 @@
 # Publish committed documentation and apply the repository's public metadata.
-param([string]$ProxyUrl)
+param([string]$ProxyUrl, [switch]$UpdateInstalledSkill)
 
 $ErrorActionPreference = 'Stop'
 Write-Host '[1/6] Checking local repository and Git...'
@@ -27,6 +27,10 @@ if ($LASTEXITCODE -ne 0 -or $dirty) { throw 'Commit local changes before publish
 $metadataPath = Join-Path $repoPath 'assets\github-metadata.json'
 $metadata = Get-Content -LiteralPath $metadataPath -Encoding UTF8 -Raw | ConvertFrom-Json
 if (-not $metadata.description -or -not $metadata.topics) { throw 'Repository metadata is incomplete.' }
+if ($metadata.name -notmatch '^[A-Za-z0-9_-]+$') { throw 'Repository name is missing or invalid.' }
+if ($UpdateInstalledSkill) {
+    & (Join-Path $PSScriptRoot 'sync-installed-skill.ps1')
+}
 
 $networkOptions = @('-c', 'http.sslBackend=openssl', '-c', 'http.version=HTTP/1.1', '-c', 'http.lowSpeedLimit=1', '-c', 'http.lowSpeedTime=30')
 $apiOptions = @{TimeoutSec = 30}
@@ -83,24 +87,36 @@ try {
         Authorization = "Bearer $token"
         Accept = 'application/vnd.github+json'
         'X-GitHub-Api-Version' = '2022-11-28'
-        'User-Agent' = 'simple-checker-publisher'
+        'User-Agent' = 'simple-reviewer-publisher'
     }
     $api = "https://api.github.com/repos/$owner/$repository"
     $previousTls = [Net.ServicePointManager]::SecurityProtocol
     try {
         [Net.ServicePointManager]::SecurityProtocol = $previousTls -bor [Net.SecurityProtocolType]::Tls12
-        Write-Host '[4/6] Updating the bilingual About description and repository topics...'
+        Write-Host '[4/6] Updating the repository name, bilingual About description and topics...'
         $currentTopics = Invoke-RestMethod -Uri "$api/topics" -Headers $headers @apiOptions
         $topics = @(@($currentTopics.names) + @($metadata.topics) | Sort-Object -Unique)
         if ($topics.Count -gt 20) { throw 'Adding these topics would exceed the 20-topic limit.' }
-        $descriptionBody = [Text.Encoding]::UTF8.GetBytes((@{description = $metadata.description} | ConvertTo-Json -Compress))
+        $descriptionBody = [Text.Encoding]::UTF8.GetBytes((@{name = $metadata.name; description = $metadata.description} | ConvertTo-Json -Compress))
         $topicsBody = [Text.Encoding]::UTF8.GetBytes((@{names = $topics} | ConvertTo-Json -Compress))
-        $null = Invoke-RestMethod -Method Patch -Uri $api -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $descriptionBody @apiOptions
+        $renamed = Invoke-RestMethod -Method Patch -Uri $api -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $descriptionBody @apiOptions
+        if ($renamed.name -cne $metadata.name -or $renamed.owner.login -ine $owner) { throw 'Repository rename readback differs from the request.' }
+        $repository = $renamed.name
+        $api = "https://api.github.com/repos/$owner/$repository"
+        $newRemote = "https://github.com/$owner/$repository.git"
+        & $gitExe -C $repoPath remote set-url origin $newRemote
+        if ($LASTEXITCODE -ne 0) { throw 'Repository was renamed but the local origin could not be updated.' }
+        # Explicit push URLs would otherwise keep publishing to the old name.
+        $pushUrls = @(& $gitExe -C $repoPath config --get-all remote.origin.pushurl)
+        if ($pushUrls.Count -gt 0) {
+            & $gitExe -C $repoPath config --replace-all remote.origin.pushurl $newRemote
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot update the explicit origin push URL.' }
+        }
         $null = Invoke-RestMethod -Method Put -Uri "$api/topics" -Headers $headers -ContentType 'application/json; charset=utf-8' -Body $topicsBody @apiOptions
         Write-Host '[5/6] Reading back the description and topics...'
         $result = Invoke-RestMethod -Uri $api -Headers $headers @apiOptions
         $resultTopics = Invoke-RestMethod -Uri "$api/topics" -Headers $headers @apiOptions
-        if ($result.description -cne $metadata.description) { throw 'Description readback differs from the requested value.' }
+        if ($result.name -cne $metadata.name -or $result.description -cne $metadata.description) { throw 'Repository name or description readback differs from the requested value.' }
         if (@($topics | Where-Object { $_ -notin $resultTopics.names }).Count) { throw 'Topics readback is incomplete.' }
         $localHead = & $gitExe -C $repoPath rev-parse HEAD
         if ($LASTEXITCODE -ne 0) { throw 'Cannot read local HEAD.' }

@@ -8,10 +8,10 @@ import sys
 import tempfile
 import unittest
 
-SCRIPT = Path(__file__).with_name('checker_report.py')
-spec = importlib.util.spec_from_file_location('checker_report', SCRIPT)
-checker = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(checker)
+SCRIPT = Path(__file__).with_name('reviewer_report.py')
+spec = importlib.util.spec_from_file_location('reviewer_report', SCRIPT)
+reviewer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(reviewer)
 
 
 class ReportTests(unittest.TestCase):
@@ -45,7 +45,7 @@ class ReportTests(unittest.TestCase):
         }
 
     def assess(self):
-        return checker.assess(self.record, self.root)
+        return reviewer.assess(self.record, self.root)
 
     def test_valid_runtime_evidence_passes(self):
         self.assertEqual(self.assess()['overall'], 'passed')
@@ -59,7 +59,7 @@ class ReportTests(unittest.TestCase):
             if path.is_file():
                 (fixture / path.name).write_bytes(path.read_bytes().replace(b'\r\n', b'\n'))
         record['project_root'] = str(fixture)
-        result = checker.assess(record, self.root)
+        result = reviewer.assess(record, self.root)
         self.assertEqual(result['stale_files'], [])
         self.assertEqual(result['stale_evidence'], [])
         self.assertEqual(result['overall'], 'failed')
@@ -121,13 +121,13 @@ class ReportTests(unittest.TestCase):
 
     def test_generator_is_read_only_and_preserves_input(self):
         original = copy.deepcopy(self.record)
-        checker.render(self.record, self.root, self.root / 'report')
+        reviewer.render(self.record, self.root, self.root / 'report')
         self.assertEqual(self.record, original)
         self.assertEqual((self.root / 'app.py').read_text(encoding='utf-8'), 'def run(): return 1\n')
 
     def test_html_cannot_execute_injected_title(self):
         self.record['title'] = '</script><script>alert(1)</script>'
-        paths = checker.render(self.record, self.root, self.root / 'report')
+        paths = reviewer.render(self.record, self.root, self.root / 'report')
         html = paths['html'].read_text(encoding='utf-8')
         self.assertNotIn('</script><script>alert(1)</script>', html)
         self.assertIn('textContent', html)
@@ -136,7 +136,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn('&lt;/script&gt;', illustrated)
 
     def test_output_includes_colored_graph_and_verifiable_details(self):
-        paths = checker.render(self.record, self.root, self.root / 'report')
+        paths = reviewer.render(self.record, self.root, self.root / 'report')
         markdown = paths['markdown'].read_text(encoding='utf-8')
         self.assertIn('```mermaid', markdown)
         self.assertIn('class N1 passed', markdown)
@@ -162,7 +162,7 @@ class ReportTests(unittest.TestCase):
             self.assess()
 
     def test_render_always_produces_standalone_breakdown(self):
-        paths = checker.render(self.record, self.root, self.root / 'report')
+        paths = reviewer.render(self.record, self.root, self.root / 'report')
         self.assertIn('breakdown', paths)
         self.assertIn('breakdown_html', paths)
         doc = paths['breakdown'].read_text(encoding='utf-8')
@@ -180,7 +180,7 @@ class ReportTests(unittest.TestCase):
         self.record['snapshot']['files'][0]['sha256'] = hashlib.sha256(
             source.read_bytes()).hexdigest()
         self.record['nodes'][0]['actual'] = '<unsafe> is returned'
-        paths = checker.render(self.record, self.root, self.root / 'report')
+        paths = reviewer.render(self.record, self.root, self.root / 'report')
         page = paths['breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('&lt;unsafe&gt;', page)
         self.assertNotIn('<unsafe>', page)
@@ -191,7 +191,7 @@ class ReportTests(unittest.TestCase):
             'node_ids': ['N1'], 'explanation': {'summary': 'A small <service>',
             'steps': [{'title': 'Return', 'detail': 'Use the literal 1'}],
             'example': {'input': 'No arguments', 'expected': '1', 'note': 'Illustration only'}}}]
-        page = checker.render(self.record, self.root, self.root / 'report')[
+        page = reviewer.render(self.record, self.root, self.root / 'report')[
             'breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('A small &lt;service&gt;', page)
         self.assertIn('Use the literal 1', page)
@@ -206,7 +206,7 @@ class ReportTests(unittest.TestCase):
     def test_source_excerpt_marks_changed_and_invalid_ranges(self):
         (self.root / 'app.py').write_text('def run(): return 2\n', encoding='utf-8')
         self.record['nodes'][0]['locations'][0]['end_line'] = 99
-        page = checker.render(self.record, self.root, self.root / 'report')[
+        page = reviewer.render(self.record, self.root, self.root / 'report')[
             'breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('源码已变化', page)
         self.assertIn('位置超出当前文件', page)
@@ -219,7 +219,7 @@ class ReportTests(unittest.TestCase):
         self.record['snapshot']['files'].append({'path': source.name,
             'sha256': hashlib.sha256(source.read_bytes()).hexdigest()})
         with self.assertRaisesRegex(ValueError, 'overwrite'):
-            checker.render(self.record, self.root, self.root, breakdown_only=True)
+            reviewer.render(self.record, self.root, self.root, breakdown_only=True)
         self.assertEqual(source.read_text(encoding='utf-8'), 'original\n')
 
     def test_excerpt_limit_keeps_full_range_visible(self):
@@ -227,7 +227,7 @@ class ReportTests(unittest.TestCase):
         source.write_text('\n'.join(f'value_{n} = {n}' for n in range(1, 151)), encoding='utf-8')
         self.record['snapshot']['files'][0]['sha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
         self.record['nodes'][0]['locations'][0]['end_line'] = 150
-        page = checker.render(self.record, self.root, self.root / 'report')[
+        page = reviewer.render(self.record, self.root, self.root / 'report')[
             'breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('app.py:1–150', page)
         self.assertIn('value_120 = 120', page)
@@ -236,7 +236,7 @@ class ReportTests(unittest.TestCase):
 
     def test_missing_source_has_no_old_green_or_invented_excerpt(self):
         (self.root / 'app.py').unlink()
-        page = checker.render(self.record, self.root, self.root / 'report')[
+        page = reviewer.render(self.record, self.root, self.root / 'report')[
             'breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('源码缺失或不是 UTF-8', page)
         self.assertIn('class="block pending"', page)
@@ -244,13 +244,13 @@ class ReportTests(unittest.TestCase):
 
     def test_template_markers_in_text_are_not_replaced_again(self):
         self.record['title'] = 'Literal @@CONTENT@@ <text>'
-        page = checker.render(self.record, self.root, self.root / 'report')[
+        page = reviewer.render(self.record, self.root, self.root / 'report')[
             'breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('Literal @@CONTENT@@ &lt;text&gt;', page)
 
     def test_tampered_log_downgrades_html_without_claiming_source_changed(self):
         (self.root / 'run.log').write_text('changed\n', encoding='utf-8')
-        page = checker.render(self.record, self.root, self.root / 'report')[
+        page = reviewer.render(self.record, self.root, self.root / 'report')[
             'breakdown_html'].read_text(encoding='utf-8')
         self.assertIn('class="block pending"', page)
         self.assertIn('证据已过期', page)
@@ -273,7 +273,7 @@ class ReportTests(unittest.TestCase):
         self.record['nodes'].append(extra)
         self.record['blocks'] = [{'id': 'B1', 'title': 'Application service',
             'purpose': 'Expose a stable return value', 'node_ids': ['N1', 'N2']}]
-        paths = checker.render(self.record, self.root, self.root / 'report')
+        paths = reviewer.render(self.record, self.root, self.root / 'report')
         doc = paths['breakdown'].read_text(encoding='utf-8')
         self.assertIn('Application service', doc)
         self.assertIn('Expose a stable return value', doc)
@@ -285,7 +285,7 @@ class ReportTests(unittest.TestCase):
 
     def test_breakdown_does_not_reuse_stale_green(self):
         (self.root / 'app.py').write_text('def run(): return 2\n', encoding='utf-8')
-        paths = checker.render(self.record, self.root, self.root / 'report')
+        paths = reviewer.render(self.record, self.root, self.root / 'report')
         doc = paths['breakdown'].read_text(encoding='utf-8')
         self.assertIn('待核实', doc)
         self.assertNotIn('class B1 passed;', doc)
@@ -318,7 +318,7 @@ class ReportTests(unittest.TestCase):
         self.record['snapshot']['files'].append({'path': source.name,
             'sha256': hashlib.sha256(source.read_bytes()).hexdigest()})
         with self.assertRaises(ValueError):
-            checker.render(self.record, self.root, self.root)
+            reviewer.render(self.record, self.root, self.root)
         self.assertEqual(source.read_text(encoding='utf-8'), 'original source\n')
 
 

@@ -3,9 +3,9 @@
 脚本只使用 Python 3 标准库。审查者解释目标并实际运行验证后，写 UTF-8 JSON，再生成离线报告；脚本不会分析代码语义、执行验证命令或凭空发现问题。
 
 ```text
-python <skill目录>/scripts/checker_report.py validate <review.json>
-python <skill目录>/scripts/checker_report.py breakdown <review.json> --out <产物目录>
-python <skill目录>/scripts/checker_report.py render <review.json> --out <审查产物目录>
+python <skill目录>/scripts/reviewer_report.py validate <review.json>
+python <skill目录>/scripts/reviewer_report.py breakdown <review.json> --out <产物目录>
+python <skill目录>/scripts/reviewer_report.py render <review.json> --out <审查产物目录>
 ```
 
 可从 `assets/review.example.json` 开始。该文件是**已实际执行的示例案例**，不是待填模板，不得将其中证据当作项目证据。示例源程序和运行脚本在 `assets/order-export/`；参考后替换全部目标、位置、状态和证据。运行 `python build_example.py` 可重新生成本地示例记录与日志。

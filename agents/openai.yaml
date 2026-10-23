@@ -1,4 +1,4 @@
 interface:
-  display_name: "简单的检查者1.0"
+  display_name: "Simple Reviewer · 简单的审阅者1.0"
   short_description: "生成离线 HTML 图文拆解，说明板块作用、源码位置与实际生效证据"
-  default_prompt: "使用 $simple-checker-v1 检查刚刚的代码，生成 HTML 图文拆解和文字版，逐块展示输入输出、作用、源码位置及实际验证结果，并用彩色流程图突出问题。"
+  default_prompt: "使用 $simple-reviewer-v1 检查刚刚的代码，生成 HTML 图文拆解和文字版，逐块展示输入输出、作用、源码位置及实际验证结果，并用彩色流程图突出问题。"

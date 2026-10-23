@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="1110" viewBox="0 0 360 1110" role="img" aria-labelledby="title desc">
-  <title id="title">简单的检查者：从代码到图文拆解</title>
+  <title id="title">简单的审阅者：从代码到图文拆解</title>
   <desc id="desc">手机阅读简版。输入代码和目标，拆解板块、解释作用、验证行为、标记状态，默认生成 HTML 图文拆解及 Markdown 文字版，可选生成完整审查报告。运行条件不足时保留未验证状态。</desc>
   <defs>
     <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#698173"/></marker>
@@ -15,7 +15,7 @@
   </defs>
   <rect width="360" height="1110" rx="20" fill="#f4f6f0"/>
   <text x="24" y="45" class="heading">从代码，到看得懂的结果</text>
-  <text x="24" y="79" class="body">简单的检查者 · 使用流程</text>
+  <text x="24" y="79" class="body">简单的审阅者 · 使用流程</text>
 
   <rect x="16" y="106" width="328" height="100" rx="14" fill="#e6f1f4" stroke="#8cb5c2" stroke-width="1.5"/>
   <text x="34" y="143" class="title">输入代码 + 你的目标</text>

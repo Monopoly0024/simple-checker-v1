@@ -25,17 +25,17 @@ jobs:
           skill = Path("SKILL.md").read_text(encoding="utf-8")
           match = re.match(r"^---\n(.*?)\n---\n", skill, re.S)
           assert match, "SKILL.md frontmatter is missing"
-          assert re.search(r"^name: simple-checker-v1$", match.group(1), re.M)
+          assert re.search(r"^name: simple-reviewer-v1$", match.group(1), re.M)
           assert re.search(r"^description: .+", match.group(1), re.M)
           assert "[TODO:" not in skill
           print("Skill metadata and required files are present")
           PY
       - name: Run report generator tests
-        run: python -B scripts/test_checker_report.py
+        run: python -B scripts/test_reviewer_report.py
       - name: Validate example review
-        run: python -B scripts/checker_report.py validate assets/review.example.json
+        run: python -B scripts/reviewer_report.py validate assets/review.example.json
       - name: Render illustrated example
-        run: python -B scripts/checker_report.py render assets/review.example.json --out review-output
+        run: python -B scripts/reviewer_report.py render assets/review.example.json --out review-output
 
   browser:
     runs-on: ubuntu-latest
@@ -49,7 +49,7 @@ jobs:
           node-version: "22"
       - run: npm install --no-save --package-lock=false playwright@1.56.1
       - run: npx playwright install --with-deps chromium
-      - run: python -B scripts/checker_report.py render assets/review.example.json --out review-output
+      - run: python -B scripts/reviewer_report.py render assets/review.example.json --out review-output
       - run: node scripts/test_breakdown_browser.cjs review-output/code-breakdown.html review-output/browser
       - uses: actions/upload-artifact@v4
         with:

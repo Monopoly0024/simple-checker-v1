@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1030" role="img" aria-labelledby="title desc">
-  <title id="title">简单的检查者：从代码输入到图文拆解与验证结果</title>
+  <title id="title">简单的审阅者：从代码输入到图文拆解与验证结果</title>
   <desc id="desc">输入代码和目标，依次拆解职责、解释输入输出和代码位置、检查实际行为、按证据标记状态，生成 HTML 与 Markdown 拆解文件，可选生成完整报告。</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
@@ -26,7 +26,7 @@
   </defs>
   <rect x="0" y="0" width="1440" height="1030" rx="24" fill="#f5f6f1"/>
   <text x="54" y="66" class="title">从代码输入，到看得懂、能复核的结果</text>
-  <text x="56" y="102" class="subtitle">简单的检查者 1.1.0 · 解释每块代码，也核实它是否真的完成目标</text>
+  <text x="56" y="102" class="subtitle">简单的审阅者 1.1.0 · 解释每块代码，也核实它是否真的完成目标</text>
 
   <text x="58" y="169" class="column">输入</text>
   <text x="430" y="169" class="column">SKILL 处理流程</text>

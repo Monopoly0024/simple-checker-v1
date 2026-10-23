@@ -1,12 +1,12 @@
 ---
-name: simple-checker-v1
-description: "Use when 用户要求检查刚刚由 Codex 编写或修改的代码、单独生成代码拆解文件、说明各板块作用和代码位置、用彩色流程图定位问题，或复核实际行为是否完成原始目标；也用于简单的检查者1.0、节点复验和修复后复核。"
+name: simple-reviewer-v1
+description: "Use when 用户要求检查刚刚由 Codex 编写或修改的代码、单独生成代码拆解文件、说明各板块作用和代码位置、用彩色流程图定位问题，或复核实际行为是否完成原始目标；也用于简单的审阅者1.0、节点复验和修复后复核。"
 metadata:
   version: "1.1.0"
-  display-name: "简单的检查者1.0"
+  display-name: "Simple Reviewer · 简单的审阅者1.0"
 ---
 
-# 简单的检查者1.0
+# Simple Reviewer · 简单的审阅者1.0
 
 先解释实现，再验证职责，最后验收目标。默认用简体中文，先给彩色功能图，再给问题和证据；保留代码标识、命令与日志原文。
 
@@ -62,7 +62,7 @@ metadata:
 
 独立拆解文件按“整体划分与板块图 → 板块总表 → 每块的节点说明和生效证据 → 位置索引及覆盖边界”组织。每板块说明职责、上下游，逐节点写应有/实际作用、输入输出、路径/符号/行号、实际观察与独立预期、状态原因及限制。未运行明确标未验证或待核实。文件可独立阅读，不能只给总报告链接或仅列问题。
 
-生成文件时读取 [报告记录规范](references/report-contract.md)，填写真实 `review.json`，包括板块 `blocks`。默认运行 `scripts/checker_report.py breakdown <review.json> --out <产物目录>`，输出 `code-breakdown.html` 和 `code-breakdown.md`。用户需要完整结果时，使用 `render`，额外生成 `report.md`、`report.html` 和 `review.effective.json`。HTML 支持板块导航、点击/键盘选择流程节点、筛选待处理板块、展开全部源码及打印。生成后重新打开页面核对文字、状态和位置；有浏览器工具时检查导航、源码展开及窄屏溢出。生成器不执行记录中的命令。缺少 Python 时直接按同样内容结构写 HTML 和文字版，并说明未使用生成器校验。产物位置服从当前工作区约定。
+生成文件时读取 [报告记录规范](references/report-contract.md)，填写真实 `review.json`，包括板块 `blocks`。默认运行 `scripts/reviewer_report.py breakdown <review.json> --out <产物目录>`，输出 `code-breakdown.html` 和 `code-breakdown.md`。用户需要完整结果时，使用 `render`，额外生成 `report.md`、`report.html` 和 `review.effective.json`。HTML 支持板块导航、点击/键盘选择流程节点、筛选待处理板块、展开全部源码及打印。生成后重新打开页面核对文字、状态和位置；有浏览器工具时检查导航、源码展开及窄屏溢出。生成器不执行记录中的命令。缺少 Python 时直接按同样内容结构写 HTML 和文字版，并说明未使用生成器校验。产物位置服从当前工作区约定。
 
 为帮助理解，按需要填写每块的 `explanation.summary`、`steps`（标题与说明）、`example`（输入、应有结果、示意边界）。步骤图是解释逻辑，不冒充实际执行轨迹；示意结果不作为运行证据。不要使用未转义的 HTML 或把私有源码嵌入公共页面。源码片段按登记行号从文件读取，缺失、过期或越界时明确提示；不编造片段。复验后同步重生成 HTML 与文字版，保持编号稳定。此功能无需 CDN、第三方 Python 包或外部图片。
 

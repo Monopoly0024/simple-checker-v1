@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1030" role="img" aria-labelledby="title desc">
-  <title id="title">Simple Checker: from AI-written code to evidence-based explanations</title>
+  <title id="title">Simple Reviewer: from AI-written code to evidence-based explanations</title>
   <desc id="desc">Provide code and goals, map responsibilities, explain source locations, check actual behavior, and record evidence. Generate HTML and Markdown breakdowns, with optional full reports.</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
@@ -27,7 +27,7 @@
   </defs>
   <rect x="0" y="0" width="1440" height="1030" rx="24" fill="#f5f6f1" />
   <text x="54" y="66" class="title">Understand the code behind your Vibe Coding workflow</text>
-  <text x="56" y="102" class="subtitle">Simple Checker 1.1.0 / Explain AI-written code. Verify what it actually does.</text>
+  <text x="56" y="102" class="subtitle">Simple Reviewer 1.1.0 / Explain AI-written code. Verify what it actually does.</text>
   <text x="58" y="169" class="column">INPUT</text>
   <text x="430" y="169" class="column">SKILL WORKFLOW</text>
   <text x="1086" y="169" class="column">OUTPUTS</text>
